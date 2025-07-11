@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Peta Sekitar Kost Dijah</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 500px; width: 100%; }
+        #add-point-btn {
+            margin-bottom: 10px;
+            padding: 10px 22px;
+            font-size: 16px;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #add-point-btn:disabled {
+            background: #90caf9;
+            color: #fff;
+            cursor: not-allowed;
+        }
+        #add-point-btn:hover:not(:disabled) {
+            background: #1565c0;
+        }
+        #main-header {
+            width: 100%;
+            background: #1976d2;
+            color: #fff;
+            padding: 24px 0 16px 0;
+            box-shadow: 0 2px 12px rgba(25, 118, 210, 0.10);
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        #main-header h1 {
+            margin: 0;
+            font-size: 2.1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        #modal-form {
+            background: #fff;
+            padding: 28px 24px 20px 24px;
+            border-radius: 12px;
+            min-width: 280px;
+            box-shadow: 0 4px 24px rgba(25, 118, 210, 0.18);
+            border: 1px solid #e3e3e3;
+            animation: popin 0.2s;
+        }
+        @keyframes popin {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        #modal-form h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: #1976d2;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        #point-form label {
+            font-weight: 500;
+            color: #333;
+        }
+        #point-form input[type="text"] {
+            width: 100%;
+            margin-bottom: 14px;
+            padding: 8px 10px;
+            border: 1px solid #bdbdbd;
+            border-radius: 5px;
+            font-size: 15px;
+            transition: border 0.2s;
+        }
+        #point-form input[type="text"]:focus {
+            border: 1.5px solid #1976d2;
+            outline: none;
+        }
+        #point-form button[type="submit"] {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 18px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #point-form button[type="submit"]:hover {
+            background: #1565c0;
+        }
+        #cancel-btn {
+            background: #e0e0e0;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 18px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: background 0.2s;
+        }
+        #cancel-btn:hover {
+            background: #bdbdbd;
+        }
+        #main-footer {
+            width: 100%;
+            background: #2196f3;
+            color: #fff;
+            padding: 16px 0 14px 0;
+            text-align: center;
+            font-size: 1rem;
+            margin-top: 32px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 -2px 12px rgba(33, 150, 243, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <header id="main-header">
+        <h1>Peta Sekitar Kost Dijah</h1>
+    </header>
+    <h2>Peta Sekitar Kost Dijah</h2>
+    <button id="add-point-btn">Tambah Titik</button>
+    <div id="map"></div>
+    <!-- Modal Tambah Titik -->
+    <div id="modal-overlay">
+      <div id="modal-form">
+        <h3>Tambah Titik</h3>
+        <form id="point-form">
+          <label for="point-name">Nama Titik/Lokasi:</label><br>
+          <input type="text" id="point-name" name="point-name" required><br>
+          <input type="hidden" id="point-lat">
+          <input type="hidden" id="point-lng">
+          <button type="submit">Simpan</button>
+          <button type="button" id="cancel-btn">Batal</button>
+        </form>
+      </div>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([0.445867, 101.395584], 17);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Marker default (tidak bisa dihapus)
+        L.marker([0.445867, 101.395584]).addTo(map)
+            .bindPopup('Rumah/Kos Saya (Dijah)<br>Koordinat: 0.445867, 101.395584')
+            .openPopup();
+        L.marker([0.4477868, 101.3939694]).addTo(map)
+            .bindPopup("Kolam Renang Ceria<br>Koordinat: 0.4477868, 101.3939694");
+        L.marker([0.4458278, 101.3934197]).addTo(map)
+            .bindPopup("Mushola<br>Koordinat: 0.4458278, 101.3934197");
+
+        // Marker custom (bisa dihapus)
+        function loadSavedMarkers() {
+            var saved = localStorage.getItem('customMarkers');
+            if (saved) {
+                var markers = JSON.parse(saved);
+                markers.forEach(function(m, idx) {
+                    addCustomMarker(m.lat, m.lng, m.label, idx);
+                });
+            }
+        }
+        function saveMarker(lat, lng, label) {
+            var saved = localStorage.getItem('customMarkers');
+            var markers = saved ? JSON.parse(saved) : [];
+            markers.push({lat: lat, lng: lng, label: label});
+            localStorage.setItem('customMarkers', JSON.stringify(markers));
+        }
+        function removeMarker(idx) {
+            var saved = localStorage.getItem('customMarkers');
+            if (!saved) return;
+            var markers = JSON.parse(saved);
+            markers.splice(idx, 1);
+            localStorage.setItem('customMarkers', JSON.stringify(markers));
+        }
+        // Simpan referensi marker custom agar bisa dihapus dari peta
+        var customMarkers = [];
+        function addCustomMarker(lat, lng, label, idx) {
+            var marker = L.marker([lat, lng]).addTo(map);
+            var popupContent = `<b>${label}</b><br>Koordinat: ${lat.toFixed(7)}, ${lng.toFixed(7)}<br><button class='hapus-titik-btn' data-idx='${idx}'>Hapus</button>`;
+            marker.bindPopup(popupContent);
+            customMarkers.push(marker);
+            marker.on('popupopen', function() {
+                var btn = document.querySelector('.hapus-titik-btn[data-idx="'+idx+'"]');
+                if (btn) {
+                    btn.onclick = function() {
+                        map.removeLayer(marker);
+                        removeMarker(idx);
+                        marker.closePopup();
+                        // Refresh marker agar index tetap konsisten
+                        customMarkers.forEach(m => map.removeLayer(m));
+                        customMarkers = [];
+                        loadSavedMarkers();
+                    };
+                }
+            });
+        }
+
+        // Modal logic
+        var modal = document.getElementById('modal-overlay');
+        var form = document.getElementById('point-form');
+        var cancelBtn = document.getElementById('cancel-btn');
+        var pointNameInput = document.getElementById('point-name');
+        var pointLatInput = document.getElementById('point-lat');
+        var pointLngInput = document.getElementById('point-lng');
+
+        function showModal(lat, lng) {
+            pointNameInput.value = '';
+            pointLatInput.value = lat;
+            pointLngInput.value = lng;
+            modal.style.display = 'flex';
+            pointNameInput.focus();
+        }
+        function hideModal() {
+            modal.style.display = 'none';
+        }
+        cancelBtn.onclick = function() {
+            hideModal();
+            addPointMode = false;
+            addPointBtn.textContent = 'Tambah Titik';
+            addPointBtn.disabled = false;
+        };
+        form.onsubmit = function(e) {
+            e.preventDefault();
+            var lat = parseFloat(pointLatInput.value);
+            var lng = parseFloat(pointLngInput.value);
+            var label = pointNameInput.value.trim();
+            if (label) {
+                saveMarker(lat, lng, label);
+                // Refresh marker agar index tetap konsisten
+                customMarkers.forEach(m => map.removeLayer(m));
+                customMarkers = [];
+                loadSavedMarkers();
+            }
+            hideModal();
+            addPointMode = false;
+            addPointBtn.textContent = 'Tambah Titik';
+            addPointBtn.disabled = false;
+        };
+
+        // Mode tambah titik
+        var addPointMode = false;
+        var addPointBtn = document.getElementById('add-point-btn');
+        addPointBtn.addEventListener('click', function() {
+            addPointMode = true;
+            addPointBtn.textContent = 'Klik di peta untuk menambah titik...';
+            addPointBtn.disabled = true;
+        });
+
+        map.on('click', function(e) {
+            if (!addPointMode) return;
+            showModal(e.latlng.lat, e.latlng.lng);
+        });
+
+        loadSavedMarkers();
+    </script>
+    <footer id="main-footer">
+        © 2024 Kost Dijah. Dibuat dengan Leaflet & OpenStreetMap.
+    </footer>
+</body>
+</html> 
